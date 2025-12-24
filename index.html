@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pulse Jump</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0b0b12;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: sans-serif;
+      color: white;
+    }
+    canvas {
+      background: linear-gradient(#111, #050509);
+      border: 2px solid #2affff;
+    }
+    #overlay {
+      position: absolute;
+      text-align: center;
+      font-size: 20px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<div id="overlay">Click or Press SPACE to Jump</div>
+<canvas id="game" width="400" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let player = { x: 80, y: 300, r: 12, v: 0 };
+let gravity = 0.5;
+let jump = -8;
+let obstacles = [];
+let frame = 0;
+let score = 0;
+let gameOver = false;
+
+function spawnObstacle() {
+  let gapY = Math.random() * 300 + 100;
+  obstacles.push({
+    x: canvas.width,
+    gapY,
+    gapH: 120,
+    speed: 3
+  });
+}
+
+function reset() {
+  player.y = 300;
+  player.v = 0;
+  obstacles = [];
+  frame = 0;
+  score = 0;
+  gameOver = false;
+}
+
+function drawPlayer() {
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
+  ctx.fillStyle = "#2affff";
+  ctx.fill();
+}
+
+function drawObstacles() {
+  ctx.fillStyle = "#ff2a6d";
+  obstacles.forEach(o => {
+    ctx.fillRect(o.x, 0, 40, o.gapY - o.gapH / 2);
+    ctx.fillRect(o.x, o.gapY + o.gapH / 2, 40, canvas.height);
+  });
+}
+
+function update() {
+  if (gameOver) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  player.v += gravity;
+  player.y += player.v;
+
+  if (player.y < 0 || player.y > canvas.height) {
+    gameOver = true;
+  }
+
+  if (frame % 90 === 0) spawnObstacle();
+
+  obstacles.forEach(o => {
+    o.x -= o.speed;
+
+    if (
+      player.x + player.r > o.x &&
+      player.x - player.r < o.x + 40 &&
+      (player.y < o.gapY - o.gapH / 2 ||
+       player.y > o.gapY + o.gapH / 2)
+    ) {
+      gameOver = true;
+    }
+  });
+
+  obstacles = obstacles.filter(o => o.x > -40);
+
+  drawObstacles();
+  drawPlayer();
+
+  score++;
+  ctx.fillStyle = "white";
+  ctx.fillText("Score: " + Math.floor(score / 10), 10, 20);
+
+  if (gameOver) {
+    ctx.fillStyle = "red";
+    ctx.fillText("GAME OVER", 140, 300);
+    ctx.fillText("Click to Restart", 130, 330);
+  }
+
+  frame++;
+  requestAnimationFrame(update);
+}
+
+document.addEventListener("keydown", e => {
+  if (e.code === "Space") {
+    if (gameOver) reset();
+    player.v = jump;
+  }
+});
+
+canvas.addEventListener("click", () => {
+  if (gameOver) reset();
+  player.v = jump;
+});
+
+update();
+</script>
+</body>
+</html>
